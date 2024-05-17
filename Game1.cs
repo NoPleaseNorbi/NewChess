@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace NewChess
 {
@@ -48,10 +49,34 @@ namespace NewChess
                 board[6, col] = Tuple.Create(Pieces.Pawn, false);
             }
         }
+
+        public Pieces? GetPiece(int row, int col)
+        {
+            return board[row, col]?.Item1;
+        }
+
+        public bool IsWhite(int row, int col)
+        {
+            return board[row, col]?.Item2 ?? false;
+        }
+
+        public void RemovePiece(int row, int col)
+        {
+            board[row, col] = null;
+        }
+
+        public void SetPiece(int row, int col, Pieces piece, bool isWhite)
+        {
+            board[row, col] = Tuple.Create(piece, isWhite);
+        }
     }
 
     public class Game1 : Game
     {
+        private Vector2? selectedPiecePosition;
+        private Vector2? initialMousePosition;
+        private Vector2? previousMousePosition;
+
         Texture2D whitePawnTexture;
         Texture2D whiteBishopTexture;
         Texture2D whiteKnightTexture;
@@ -111,24 +136,99 @@ namespace NewChess
             blackKingTexture = Content.Load<Texture2D>("black-king");
         }
 
+        private Vector2? GetBoardPosition(Point mousePosition)
+        {
+            const int boardOffSetX = 80;
+            const int boardOffSetY = 50;
+            const int squareSize = 80;
+
+            int col = (mousePosition.X - boardOffSetX) / squareSize;
+            int row = (mousePosition.Y - boardOffSetY) / squareSize;
+
+            if (row >= 0 && row < 8 && col >= 0 && col < 8)
+                return new Vector2(row, col);
+            else
+                return null;
+        }
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-                Exit();
+            var mouse = Mouse.GetState();
+            if (mouse.LeftButton == ButtonState.Pressed)
+            {
+                if (selectedPiecePosition == null)
+                {
+                    // Try to select a piece
+                    selectedPiecePosition = GetBoardPosition(mouse.Position);
+                    initialMousePosition = new Vector2(mouse.Position.X, mouse.Position.Y);
+                }
+                else
+                {
+                    previousMousePosition = new Vector2(mouse.Position.X, mouse.Position.Y);
+                }
 
-            // TODO: Add your update logic here
+            }
+            else if (mouse.LeftButton == ButtonState.Released && selectedPiecePosition.HasValue)
+            {
+                // Drop the piece
+                var dropPosition = GetBoardPosition(mouse.Position);
+                if (dropPosition.HasValue)
+                {
+                    var piece = _board.GetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y);
+                    var isWhite = _board.IsWhite((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y);
 
+                    // Update the board
+                    if (piece != null) { 
+                        _board.RemovePiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y);
+                        _board.SetPiece((int)dropPosition.Value.X, (int)dropPosition.Value.Y, piece.Value, isWhite);
+                    }
+                }
+
+                initialMousePosition = null;
+                previousMousePosition = null;
+                selectedPiecePosition = null;
+            }
             base.Update(gameTime);
         }
 
+        private Texture2D GetPieceTexture(Pieces? piece, bool isWhite)
+        {
+            if (!piece.HasValue) return null; // If there's no piece, return null
+
+            if (isWhite)
+            {
+                switch (piece.Value)
+                {
+                    case Pieces.Pawn: return blackPawnTexture;
+                    case Pieces.Rook: return blackRookTexture;
+                    case Pieces.Knight: return blackKnightTexture;
+                    case Pieces.Bishop: return blackBishopTexture;
+                    case Pieces.Queen: return blackQueenTexture;
+                    case Pieces.King: return blackKingTexture;
+                }
+            }
+            else
+            {
+                switch (piece.Value)
+                {
+                    case Pieces.Pawn: return whitePawnTexture;
+                    case Pieces.Rook: return whiteRookTexture;
+                    case Pieces.Knight: return whiteKnightTexture;
+                    case Pieces.Bishop: return whiteBishopTexture;
+                    case Pieces.Queen: return whiteQueenTexture;
+                    case Pieces.King: return whiteKingTexture;              
+                }
+            }
+
+            return null;
+        }
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             _spriteBatch.Begin();
-            const int boardOffSetX = 200;
+            const int boardOffSetX = 80;
             const int boardOffSetY = 50;
-            const int squareSize = 50;
+            const int squareSize = 80;
             Color lightSquareColor = Color.LightYellow;
             Color darkSquareColor = Color.SaddleBrown;
             for (int row = 0; row < 8; row++)
@@ -142,27 +242,37 @@ namespace NewChess
                     Texture2D pieceTexture = null;
                     if (_board.board[row, col] != null) 
                     {
-                        if (_board.board[row, col].Item1 == Pieces.Pawn) 
-                        { 
-                            if (_board.board[row, col].Item2 == true)
-                            {
-                                pieceTexture = whitePawnTexture;
-                            }
-                            else 
-                            {
-                                pieceTexture = blackPawnTexture;
-                            }
-                        }
+                        pieceTexture = GetPieceTexture(_board.board[row, col].Item1, (_board.board[row, col].Item2));          
                     }
                     if (pieceTexture != null) { 
-                        int pieceX = squareRect.X + (squareSize - pieceTexture.Width) / 2;
-                        int pieceY = squareRect.Y + (squareSize - pieceTexture.Height) / 2;
-                        _spriteBatch.Draw(pieceTexture, new Vector2(pieceX, pieceY), Color.White);
+                        float pieceX = squareRect.X + (squareSize - pieceTexture.Width) / 2;
+                        float pieceY = squareRect.Y + (squareSize - pieceTexture.Height) / 2;
+                        float scale = 0.7f;
+
+                        pieceX += (pieceTexture.Width * (1 - scale)) / 2;
+                        pieceY += (pieceTexture.Height * (1 - scale)) / 2;
+
+                        _spriteBatch.Draw(pieceTexture, new Vector2(pieceX, pieceY), null, Color.White, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
                     }
 
                 }
             }
 
+            if (selectedPiecePosition.HasValue && initialMousePosition.HasValue && previousMousePosition.HasValue)
+            {
+                var piece = _board.GetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y);
+                var isWhite = _board.IsWhite((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y);
+                Texture2D pieceTexture = GetPieceTexture(piece, isWhite);
+                if (pieceTexture != null)
+                {
+                    Vector2 piecePosition = previousMousePosition.Value - initialMousePosition.Value + new Vector2(boardOffSetX + selectedPiecePosition.Value.Y * squareSize, boardOffSetY + selectedPiecePosition.Value.X * squareSize);
+
+                    float scale = 0.7f;
+                    piecePosition += new Vector2((pieceTexture.Width * (1 - scale)) / 2, (pieceTexture.Height * (1 - scale)) / 2);
+
+                    _spriteBatch.Draw(pieceTexture, piecePosition, null, Color.White, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+                }
+            }
             _spriteBatch.End();
 
             base.Draw(gameTime);
