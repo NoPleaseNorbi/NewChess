@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace NewChess
 {
@@ -97,11 +98,12 @@ namespace NewChess
 
         private Board _board;
 
+        private Tuple<Pieces?, bool> _draggedPiece;
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
-            IsMouseVisible = true;
+            IsMouseVisible = true;       
         }
 
         protected override void Initialize()
@@ -110,6 +112,7 @@ namespace NewChess
             _graphics.PreferredBackBufferWidth = 800;
             _graphics.PreferredBackBufferHeight = 800;
             _graphics.ApplyChanges();
+            _draggedPiece = null;
             _board = new Board();
             base.Initialize();
         }
@@ -160,6 +163,12 @@ namespace NewChess
                     // Try to select a piece
                     selectedPiecePosition = GetBoardPosition(mouse.Position);
                     initialMousePosition = new Vector2(mouse.Position.X, mouse.Position.Y);
+                    if (selectedPiecePosition != null) { 
+                        if (_board.GetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y) != null) { 
+                            _draggedPiece = Tuple.Create(_board.GetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y), _board.IsWhite((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y));
+                            _board.RemovePiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y);
+                        }
+                    }
                 }
                 else
                 {
@@ -173,19 +182,16 @@ namespace NewChess
                 var dropPosition = GetBoardPosition(mouse.Position);
                 if (dropPosition.HasValue)
                 {
-                    var piece = _board.GetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y);
-                    var isWhite = _board.IsWhite((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y);
-
                     // Update the board
-                    if (piece != null) { 
-                        _board.RemovePiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y);
-                        _board.SetPiece((int)dropPosition.Value.X, (int)dropPosition.Value.Y, piece.Value, isWhite);
+                    if (_draggedPiece != null) { 
+                        _board.SetPiece((int)dropPosition.Value.X, (int)dropPosition.Value.Y, _draggedPiece.Item1.Value, _draggedPiece.Item2);
                     }
                 }
 
                 initialMousePosition = null;
                 previousMousePosition = null;
                 selectedPiecePosition = null;
+                _draggedPiece = null;
             }
             base.Update(gameTime);
         }
@@ -242,36 +248,43 @@ namespace NewChess
                     Texture2D pieceTexture = null;
                     if (_board.board[row, col] != null) 
                     {
-                        pieceTexture = GetPieceTexture(_board.board[row, col].Item1, (_board.board[row, col].Item2));          
-                    }
-                    if (pieceTexture != null) { 
-                        float pieceX = squareRect.X + (squareSize - pieceTexture.Width) / 2;
-                        float pieceY = squareRect.Y + (squareSize - pieceTexture.Height) / 2;
-                        float scale = 0.7f;
+                        pieceTexture = GetPieceTexture(_board.board[row, col].Item1, (_board.board[row, col].Item2));
+                        if (pieceTexture != null)
+                        {
+                            float pieceX = squareRect.X + (squareSize - pieceTexture.Width) / 2;
+                            float pieceY = squareRect.Y + (squareSize - pieceTexture.Height) / 2;
+                            float scale = 0.7f;
 
-                        pieceX += (pieceTexture.Width * (1 - scale)) / 2;
-                        pieceY += (pieceTexture.Height * (1 - scale)) / 2;
+                            pieceX += ((pieceTexture.Width * (1 - scale)) / 2);
+                            pieceY += ((pieceTexture.Height * (1 - scale)) / 2);
 
-                        _spriteBatch.Draw(pieceTexture, new Vector2(pieceX, pieceY), null, Color.White, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
-                    }
+                            _spriteBatch.Draw(pieceTexture, new Vector2(pieceX, pieceY), null, Color.White, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+                        }
+                    }          
 
                 }
             }
 
             if (selectedPiecePosition.HasValue && initialMousePosition.HasValue && previousMousePosition.HasValue)
             {
-                var piece = _board.GetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y);
-                var isWhite = _board.IsWhite((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y);
-                Texture2D pieceTexture = GetPieceTexture(piece, isWhite);
-                if (pieceTexture != null)
-                {
-                    Vector2 piecePosition = previousMousePosition.Value - initialMousePosition.Value + new Vector2(boardOffSetX + selectedPiecePosition.Value.Y * squareSize, boardOffSetY + selectedPiecePosition.Value.X * squareSize);
+                Texture2D pieceTexture = null;
+                if (_draggedPiece != null) { 
+                    pieceTexture = GetPieceTexture(_draggedPiece.Item1.Value, _draggedPiece.Item2);
+                    if (pieceTexture != null)
+                    {
+                        var mousePosition = Mouse.GetState().Position;
+                        float scale = 0.7f;
 
-                    float scale = 0.7f;
-                    piecePosition += new Vector2((pieceTexture.Width * (1 - scale)) / 2, (pieceTexture.Height * (1 - scale)) / 2);
+                        // Center the piece under the mouse cursor
+                        Vector2 piecePosition = new Vector2(
+                            mousePosition.X - (pieceTexture.Width * scale) / 2,
+                            mousePosition.Y - (pieceTexture.Height * scale) / 2
+                        );
 
-                    _spriteBatch.Draw(pieceTexture, piecePosition, null, Color.White, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+                        _spriteBatch.Draw(pieceTexture, piecePosition, null, Color.White, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+                    }
                 }
+                
             }
             _spriteBatch.End();
 
