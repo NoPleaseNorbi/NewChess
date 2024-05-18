@@ -114,7 +114,6 @@ namespace NewChess
                             if (_board.GetTurn() == _board.IsWhite((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y)) { 
                                 _draggedPiece = Tuple.Create(_board.GetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y), _board.IsWhite((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y));
                                 _board.RemovePiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y);
-                                _board.NextTurn();
                             }
                         }
                     }
@@ -130,11 +129,88 @@ namespace NewChess
                 // Drop the piece
                 var dropPosition = GetBoardPosition(mouse.Position);
                 if (dropPosition.HasValue)
-                {
+                {               
                     // Update the board
-                    if (_draggedPiece != null) { 
-                        _board.SetPiece((int)dropPosition.Value.X, (int)dropPosition.Value.Y, _draggedPiece.Item1.Value, _draggedPiece.Item2);
-                    }
+                    if (_draggedPiece != null) {
+                        if (_draggedPiece.Item1.Value == Pieces.Pawn)
+                        {
+                            Pawn pawn = new Pawn(!_draggedPiece.Item2);
+                            if (pawn.GetValidMoves(selectedPiecePosition.Value, _board).Contains(new Vector2(dropPosition.Value.X, dropPosition.Value.Y)))
+                            {
+                                _board.SetPiece((int)dropPosition.Value.X, (int)dropPosition.Value.Y, Pieces.Pawn, !pawn.isWhite);
+                                _board.NextTurn();
+                            }
+                            else
+                            {
+                                _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y, Pieces.Pawn, !pawn.isWhite);
+                            }
+                        }
+                        else if (_draggedPiece.Item1.Value == Pieces.Knight) 
+                        {
+                            Knight knight = new Knight(!_draggedPiece.Item2);
+                            if (knight.GetValidMoves(selectedPiecePosition.Value, _board).Contains(new Vector2(dropPosition.Value.X, dropPosition.Value.Y)))
+                            {
+                                _board.SetPiece((int)dropPosition.Value.X, (int)dropPosition.Value.Y, Pieces.Knight, !knight.isWhite);
+                                _board.NextTurn();
+                            }
+                            else
+                            {
+                                _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y, Pieces.Knight, !knight.isWhite);
+                            }
+                        }
+                        else if (_draggedPiece.Item1.Value == Pieces.King)
+                        {
+                            King king = new King(!_draggedPiece.Item2);
+                            if (king.GetValidMoves(selectedPiecePosition.Value, _board).Contains(new Vector2(dropPosition.Value.X, dropPosition.Value.Y)))
+                            {
+                                _board.SetPiece((int)dropPosition.Value.X, (int)dropPosition.Value.Y, Pieces.King, !king.isWhite);
+                                _board.NextTurn();
+                            }
+                            else
+                            {
+                                _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y, Pieces.King, !king.isWhite);
+                            }
+                        }
+                        else if (_draggedPiece.Item1.Value == Pieces.Rook)
+                        {
+                            Rook rook = new Rook(!_draggedPiece.Item2);
+                            if (rook.GetValidMoves(selectedPiecePosition.Value, _board).Contains(new Vector2(dropPosition.Value.X, dropPosition.Value.Y)))
+                            {
+                                _board.SetPiece((int)dropPosition.Value.X, (int)dropPosition.Value.Y, Pieces.Rook, !rook.isWhite);
+                                _board.NextTurn();
+                            }
+                            else
+                            {
+                                _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y, Pieces.Rook, !rook.isWhite);
+                            }
+                        }
+                        else if (_draggedPiece.Item1.Value == Pieces.Bishop)
+                        {
+                            Bishop bishop = new Bishop(!_draggedPiece.Item2);
+                            if (bishop.GetValidMoves(selectedPiecePosition.Value, _board).Contains(new Vector2(dropPosition.Value.X, dropPosition.Value.Y)))
+                            {
+                                _board.SetPiece((int)dropPosition.Value.X, (int)dropPosition.Value.Y, Pieces.Bishop, !bishop.isWhite);
+                                _board.NextTurn();
+                            }
+                            else
+                            {
+                                _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y, Pieces.Bishop, !bishop.isWhite);
+                            }
+                        }
+                        else if (_draggedPiece.Item1.Value == Pieces.Queen)
+                        {
+                            Queen queen = new Queen(!_draggedPiece.Item2);
+                            if (queen.GetValidMoves(selectedPiecePosition.Value, _board).Contains(new Vector2(dropPosition.Value.X, dropPosition.Value.Y)))
+                            {
+                                _board.SetPiece((int)dropPosition.Value.X, (int)dropPosition.Value.Y, Pieces.Queen, !queen.isWhite);
+                                _board.NextTurn();
+                            }
+                            else
+                            {
+                                _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y, Pieces.Queen, !queen.isWhite);
+                            }
+                        }
+                    }            
                 }
 
                 initialMousePosition = null;
@@ -192,6 +268,7 @@ namespace NewChess
                 {
                     Color squareColor = (row + col) % 2 == 0 ? lightSquareColor : darkSquareColor;
                     Rectangle squareRect = new Rectangle(boardOffSetX + col * squareSize, boardOffSetY + row * squareSize, squareSize, squareSize);
+                    
                     _spriteBatch.Draw(cellTexture, squareRect, squareColor);
 
                     Texture2D pieceTexture = null;

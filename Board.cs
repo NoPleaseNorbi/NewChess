@@ -4,11 +4,13 @@ using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Xna.Framework;
 
 namespace NewChess
 {
     public class Board
     {
+
         public Tuple<Pieces, bool>[,] board;
         private bool blacksTurn;
         public Board()
@@ -69,6 +71,11 @@ namespace NewChess
         public void SetPiece(int row, int col, Pieces piece, bool isWhite)
         {
             board[row, col] = Tuple.Create(piece, isWhite);
+        }
+
+        public bool IsValidPosition(Vector2 position)
+        {
+            return position.X >= 0 && position.X < 8 && position.Y >= 0 && position.Y < 8;
         }
     }
 }
