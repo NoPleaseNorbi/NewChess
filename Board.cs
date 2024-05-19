@@ -11,56 +11,58 @@ namespace NewChess
     public class Board
     {
 
-        public Tuple<Pieces, bool>[,] board;
-        private bool blacksTurn;
+        public IPiece[,] board;
+        private bool whitesTurn;
         public Board()
         {
-            board = new Tuple<Pieces, bool>[8, 8];
-            blacksTurn = false;
+            board = new IPiece[8, 8];
+            whitesTurn = true;
             // Set up starting positions for white pieces
-            board[0, 0] = Tuple.Create(Pieces.Rook, true);
-            board[0, 1] = Tuple.Create(Pieces.Knight, true);
-            board[0, 2] = Tuple.Create(Pieces.Bishop, true);
-            board[0, 3] = Tuple.Create(Pieces.Queen, true);
-            board[0, 4] = Tuple.Create(Pieces.King, true);
-            board[0, 5] = Tuple.Create(Pieces.Bishop, true);
-            board[0, 6] = Tuple.Create(Pieces.Knight, true);
-            board[0, 7] = Tuple.Create(Pieces.Rook, true);
+
+            board[0, 0] = new Rook(false);
+            board[0, 1] = new Knight(false);
+            board[0, 2] = new Bishop(false);
+            board[0, 3] = new Queen(false);
+            board[0, 4] = new King(false);
+            board[0, 5] = new Bishop(false);
+            board[0, 6] = new Knight(false);
+            board[0, 7] = new Rook(false);
             for (int col = 0; col < 8; col++)
             {
-                board[1, col] = Tuple.Create(Pieces.Pawn, true);
+                board[1, col] = new Pawn(false);
             }
 
             // Set up starting positions for black pieces
-            board[7, 0] = Tuple.Create(Pieces.Rook, false);
-            board[7, 1] = Tuple.Create(Pieces.Knight, false);
-            board[7, 2] = Tuple.Create(Pieces.Bishop, false);
-            board[7, 3] = Tuple.Create(Pieces.Queen, false);
-            board[7, 4] = Tuple.Create(Pieces.King, false);
-            board[7, 5] = Tuple.Create(Pieces.Bishop, false);
-            board[7, 6] = Tuple.Create(Pieces.Knight, false);
-            board[7, 7] = Tuple.Create(Pieces.Rook, false);
+            board[7, 0] = new Rook(true);
+            board[7, 1] = new Knight(true);
+            board[7, 2] = new Bishop(true);
+            board[7, 3] = new Queen(true);
+            board[7, 4] = new King(true);
+            board[7, 5] = new Bishop(true);
+            board[7, 6] = new Knight(true);
+            board[7, 7] = new Rook(true);
             for (int col = 0; col < 8; col++)
             {
-                board[6, col] = Tuple.Create(Pieces.Pawn, false);
+                board[6, col] = new Pawn(true);
             }
         }
 
         public bool GetTurn() {
-            return blacksTurn;
+            return whitesTurn;
         }
         public void NextTurn()
         {
-            blacksTurn = !blacksTurn;
+            whitesTurn = !whitesTurn;
         }
-        public Pieces? GetPiece(int row, int col)
+        public IPiece GetPiece(int row, int col)
         {
-            return board[row, col]?.Item1;
+            return board[row, col];
         }
 
         public bool IsWhite(int row, int col)
         {
-            return board[row, col]?.Item2 ?? false;
+            var piece = board[row, col];
+            return piece != null && piece.isWhite;
         }
 
         public void RemovePiece(int row, int col)
@@ -68,14 +70,68 @@ namespace NewChess
             board[row, col] = null;
         }
 
-        public void SetPiece(int row, int col, Pieces piece, bool isWhite)
+        public void SetPiece(int row, int col, IPiece piece)
         {
-            board[row, col] = Tuple.Create(piece, isWhite);
+            if (row == 0 && piece.isWhite && piece is Pawn)
+            {
+                board[row, col] = new Queen(true);
+            }
+            else if (row == 7 && !piece.isWhite && piece is Pawn) 
+            {
+                board[row, col] = new Queen(false);
+            }
+            else
+            {
+                board[row, col] = piece;
+            }
         }
 
         public bool IsValidPosition(Vector2 position)
         {
             return position.X >= 0 && position.X < 8 && position.Y >= 0 && position.Y < 8;
+        }
+
+        public void KingMove(int row, int col) 
+        {
+            if (board[row, col] != null && board[row, col] is King)
+            {
+                board[row, col].HasMoved = true;
+            }
+        }
+        private Vector2 FindKingPosition(bool isWhite)
+        {
+            for (int row = 0; row < 8; row++)
+            {
+                for (int col = 0; col < 8; col++)
+                {
+                    IPiece piece = board[row, col];
+                    if (piece is King && piece.isWhite == isWhite)
+                    {
+                        return new Vector2(col, row);
+                    }
+                }
+            }
+            throw new InvalidOperationException("King not found on the board.");
+        }
+        public bool IsInCheck(bool isWhite)
+        {
+            Vector2 kingPosition = FindKingPosition(isWhite);
+
+            for (int row = 0; row < 8; row++)
+            {
+                for (int col = 0; col < 8; col++)
+                {
+                    IPiece piece = board[row, col];
+                    if (piece != null && piece.isWhite != isWhite)
+                    {
+                        if (piece.GetValidMoves(new Vector2(col, row), this).Contains(kingPosition))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false; 
         }
     }
 }

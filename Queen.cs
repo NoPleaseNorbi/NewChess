@@ -7,7 +7,7 @@ using Microsoft.Xna.Framework;
 
 namespace NewChess
 {
-    internal class Queen : IPiece
+    public class Queen : IPiece
     {
         public Queen(bool isWhite)
         {
@@ -42,7 +42,7 @@ namespace NewChess
                     }
                     else
                     {
-                        if (board.IsWhite((int)newPosition.X, (int)newPosition.Y) == isWhite)
+                        if (board.IsWhite((int)newPosition.X, (int)newPosition.Y) != isWhite)
                         {
                             validMoves.Add(newPosition);
                         }

@@ -4,20 +4,11 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Net.NetworkInformation;
 using static System.Formats.Asn1.AsnWriter;
 
 namespace NewChess
 {
-
-    public enum Pieces { 
-        Pawn,
-        Knight,
-        Bishop,
-        Rook,
-        Queen,
-        King
-    }
-
     public class Game1 : Game
     {
         private Vector2? selectedPiecePosition;
@@ -44,7 +35,8 @@ namespace NewChess
 
         private Board _board;
 
-        private Tuple<Pieces?, bool> _draggedPiece;
+        private IPiece _draggedPiece;
+        List<Vector2> _avalaibleMoveSquares;
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -60,6 +52,7 @@ namespace NewChess
             _graphics.ApplyChanges();
             _draggedPiece = null;
             _board = new Board();
+            _avalaibleMoveSquares = null;
             base.Initialize();
         }
 
@@ -111,8 +104,9 @@ namespace NewChess
                     initialMousePosition = new Vector2(mouse.Position.X, mouse.Position.Y);
                     if (selectedPiecePosition != null) { 
                         if (_board.GetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y) != null) {
-                            if (_board.GetTurn() == _board.IsWhite((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y)) { 
-                                _draggedPiece = Tuple.Create(_board.GetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y), _board.IsWhite((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y));
+                            if (_board.GetTurn() == _board.IsWhite((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y)) {
+                                _draggedPiece = _board.GetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y);
+                                _avalaibleMoveSquares = _draggedPiece.GetValidMoves(selectedPiecePosition.Value, _board);
                                 _board.RemovePiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y);
                             }
                         }
@@ -132,83 +126,31 @@ namespace NewChess
                 {               
                     // Update the board
                     if (_draggedPiece != null) {
-                        if (_draggedPiece.Item1.Value == Pieces.Pawn)
+                        if (_avalaibleMoveSquares.Contains(new Vector2(dropPosition.Value.X, dropPosition.Value.Y)))
                         {
-                            Pawn pawn = new Pawn(!_draggedPiece.Item2);
-                            if (pawn.GetValidMoves(selectedPiecePosition.Value, _board).Contains(new Vector2(dropPosition.Value.X, dropPosition.Value.Y)))
+                            _board.SetPiece((int)dropPosition.Value.X, (int)dropPosition.Value.Y, _draggedPiece);
+                            if (_draggedPiece is King) 
                             {
-                                _board.SetPiece((int)dropPosition.Value.X, (int)dropPosition.Value.Y, Pieces.Pawn, !pawn.isWhite);
-                                _board.NextTurn();
+                                _board.KingMove((int)dropPosition.Value.X, (int)dropPosition.Value.Y);
+                                if ((int)dropPosition.Value.Y - (int)selectedPiecePosition.Value.Y == 2) 
+                                {
+                                    IPiece rook = _board.GetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y + 3);
+                                    _board.RemovePiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y + 3);
+                                    _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y + 1, rook);
+                                }
+                                if ((int)dropPosition.Value.Y - (int)selectedPiecePosition.Value.Y == -2)
+                                {
+                                    IPiece rook = _board.GetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y - 4);
+                                    _board.RemovePiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y - 4);
+                                    _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y - 1, rook);
+                                }
                             }
-                            else
-                            {
-                                _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y, Pieces.Pawn, !pawn.isWhite);
-                            }
+                            _board.NextTurn();
+                            _avalaibleMoveSquares = null;
                         }
-                        else if (_draggedPiece.Item1.Value == Pieces.Knight) 
+                        else
                         {
-                            Knight knight = new Knight(!_draggedPiece.Item2);
-                            if (knight.GetValidMoves(selectedPiecePosition.Value, _board).Contains(new Vector2(dropPosition.Value.X, dropPosition.Value.Y)))
-                            {
-                                _board.SetPiece((int)dropPosition.Value.X, (int)dropPosition.Value.Y, Pieces.Knight, !knight.isWhite);
-                                _board.NextTurn();
-                            }
-                            else
-                            {
-                                _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y, Pieces.Knight, !knight.isWhite);
-                            }
-                        }
-                        else if (_draggedPiece.Item1.Value == Pieces.King)
-                        {
-                            King king = new King(!_draggedPiece.Item2);
-                            if (king.GetValidMoves(selectedPiecePosition.Value, _board).Contains(new Vector2(dropPosition.Value.X, dropPosition.Value.Y)))
-                            {
-                                _board.SetPiece((int)dropPosition.Value.X, (int)dropPosition.Value.Y, Pieces.King, !king.isWhite);
-                                _board.NextTurn();
-                            }
-                            else
-                            {
-                                _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y, Pieces.King, !king.isWhite);
-                            }
-                        }
-                        else if (_draggedPiece.Item1.Value == Pieces.Rook)
-                        {
-                            Rook rook = new Rook(!_draggedPiece.Item2);
-                            if (rook.GetValidMoves(selectedPiecePosition.Value, _board).Contains(new Vector2(dropPosition.Value.X, dropPosition.Value.Y)))
-                            {
-                                _board.SetPiece((int)dropPosition.Value.X, (int)dropPosition.Value.Y, Pieces.Rook, !rook.isWhite);
-                                _board.NextTurn();
-                            }
-                            else
-                            {
-                                _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y, Pieces.Rook, !rook.isWhite);
-                            }
-                        }
-                        else if (_draggedPiece.Item1.Value == Pieces.Bishop)
-                        {
-                            Bishop bishop = new Bishop(!_draggedPiece.Item2);
-                            if (bishop.GetValidMoves(selectedPiecePosition.Value, _board).Contains(new Vector2(dropPosition.Value.X, dropPosition.Value.Y)))
-                            {
-                                _board.SetPiece((int)dropPosition.Value.X, (int)dropPosition.Value.Y, Pieces.Bishop, !bishop.isWhite);
-                                _board.NextTurn();
-                            }
-                            else
-                            {
-                                _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y, Pieces.Bishop, !bishop.isWhite);
-                            }
-                        }
-                        else if (_draggedPiece.Item1.Value == Pieces.Queen)
-                        {
-                            Queen queen = new Queen(!_draggedPiece.Item2);
-                            if (queen.GetValidMoves(selectedPiecePosition.Value, _board).Contains(new Vector2(dropPosition.Value.X, dropPosition.Value.Y)))
-                            {
-                                _board.SetPiece((int)dropPosition.Value.X, (int)dropPosition.Value.Y, Pieces.Queen, !queen.isWhite);
-                                _board.NextTurn();
-                            }
-                            else
-                            {
-                                _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y, Pieces.Queen, !queen.isWhite);
-                            }
+                            _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y, _draggedPiece);
                         }
                     }            
                 }
@@ -221,36 +163,35 @@ namespace NewChess
             base.Update(gameTime);
         }
 
-        private Texture2D GetPieceTexture(Pieces? piece, bool isWhite)
+        private Texture2D GetPieceTexture(IPiece piece)
         {
-            if (!piece.HasValue) return null; // If there's no piece, return null
-
-            if (isWhite)
+            if (piece == null)
             {
-                switch (piece.Value)
-                {
-                    case Pieces.Pawn: return blackPawnTexture;
-                    case Pieces.Rook: return blackRookTexture;
-                    case Pieces.Knight: return blackKnightTexture;
-                    case Pieces.Bishop: return blackBishopTexture;
-                    case Pieces.Queen: return blackQueenTexture;
-                    case Pieces.King: return blackKingTexture;
-                }
+                return null;
+            }
+
+            Texture2D texture = null;
+
+            if (piece.isWhite)
+            {
+                if (piece is Pawn) texture = whitePawnTexture;
+                else if (piece is Rook) texture = whiteRookTexture;
+                else if (piece is Knight) texture = whiteKnightTexture;
+                else if (piece is Bishop) texture = whiteBishopTexture;
+                else if (piece is Queen) texture = whiteQueenTexture;
+                else if (piece is King) texture = whiteKingTexture;
             }
             else
             {
-                switch (piece.Value)
-                {
-                    case Pieces.Pawn: return whitePawnTexture;
-                    case Pieces.Rook: return whiteRookTexture;
-                    case Pieces.Knight: return whiteKnightTexture;
-                    case Pieces.Bishop: return whiteBishopTexture;
-                    case Pieces.Queen: return whiteQueenTexture;
-                    case Pieces.King: return whiteKingTexture;              
-                }
+                if (piece is Pawn) texture = blackPawnTexture;
+                else if (piece is Rook) texture = blackRookTexture;
+                else if (piece is Knight) texture = blackKnightTexture;
+                else if (piece is Bishop) texture = blackBishopTexture;
+                else if (piece is Queen) texture = blackQueenTexture;
+                else if (piece is King) texture = blackKingTexture;
             }
 
-            return null;
+            return texture;
         }
         protected override void Draw(GameTime gameTime)
         {
@@ -268,13 +209,19 @@ namespace NewChess
                 {
                     Color squareColor = (row + col) % 2 == 0 ? lightSquareColor : darkSquareColor;
                     Rectangle squareRect = new Rectangle(boardOffSetX + col * squareSize, boardOffSetY + row * squareSize, squareSize, squareSize);
-                    
+                    if (_avalaibleMoveSquares != null) 
+                    {
+                        if (_avalaibleMoveSquares.Contains(new Vector2(row, col))) 
+                        {
+                            squareColor = new Color(153, 23, 40);
+                        }
+                    }
                     _spriteBatch.Draw(cellTexture, squareRect, squareColor);
 
                     Texture2D pieceTexture = null;
                     if (_board.board[row, col] != null) 
                     {
-                        pieceTexture = GetPieceTexture(_board.board[row, col].Item1, (_board.board[row, col].Item2));
+                        pieceTexture = GetPieceTexture(_board.board[row, col]);
                         if (pieceTexture != null)
                         {
                             float pieceX = squareRect.X + (squareSize - pieceTexture.Width) / 2;
@@ -295,7 +242,7 @@ namespace NewChess
             {
                 Texture2D pieceTexture = null;
                 if (_draggedPiece != null) { 
-                    pieceTexture = GetPieceTexture(_draggedPiece.Item1.Value, _draggedPiece.Item2);
+                    pieceTexture = GetPieceTexture(_draggedPiece);
                     if (pieceTexture != null)
                     {
                         var mousePosition = Mouse.GetState().Position;

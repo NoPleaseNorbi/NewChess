@@ -7,9 +7,10 @@ using Microsoft.Xna.Framework;
 
 namespace NewChess
 {
-    internal abstract class IPiece
+    public abstract class IPiece
     {
-        public bool isWhite;
+        public bool isWhite { get; set; }
+        public bool HasMoved { get; set; }
         public abstract List<Vector2> GetValidMoves(Vector2 currentPosition, Board board);
     }
 }

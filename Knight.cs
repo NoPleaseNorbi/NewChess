@@ -7,7 +7,7 @@ using Microsoft.Xna.Framework;
 
 namespace NewChess
 {
-    internal class Knight : IPiece
+    public class Knight : IPiece
     {
         public Knight(bool isWhite)
         {
@@ -31,7 +31,7 @@ namespace NewChess
             foreach (var offset in possibleOffsets)
             {
                 Vector2 newPosition = currentPosition + offset;
-                if (board.IsValidPosition(newPosition) && (board.GetPiece((int)newPosition.X, (int)newPosition.Y) == null || board.IsWhite((int)newPosition.X, (int)newPosition.Y) == isWhite))
+                if (board.IsValidPosition(newPosition) && (board.GetPiece((int)newPosition.X, (int)newPosition.Y) == null || board.IsWhite((int)newPosition.X, (int)newPosition.Y) != isWhite))
                 {
                     validMoves.Add(newPosition);
                 }

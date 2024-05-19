@@ -7,7 +7,7 @@ using Microsoft.Xna.Framework;
 
 namespace NewChess
 {
-    internal class Pawn : IPiece
+    public class Pawn : IPiece
     {
         public Pawn(bool isWhite)
         {
@@ -38,7 +38,7 @@ namespace NewChess
             for (int i = -1; i <= 1; i += 2)
             {
                 Vector2 diagonal = currentPosition + new Vector2(direction, i);
-                if (board.IsValidPosition(diagonal) && board.GetPiece((int)diagonal.X, (int)diagonal.Y) != null && board.IsWhite((int)diagonal.X, (int)diagonal.Y) == isWhite) validMoves.Add(diagonal);
+                if (board.IsValidPosition(diagonal) && board.GetPiece((int)diagonal.X, (int)diagonal.Y) != null && board.IsWhite((int)diagonal.X, (int)diagonal.Y) != isWhite) validMoves.Add(diagonal);
             }
             return validMoves;
         }

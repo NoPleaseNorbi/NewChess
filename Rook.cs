@@ -8,7 +8,7 @@ using Microsoft.Xna.Framework;
 
 namespace NewChess
 {
-    internal class Rook : IPiece
+    public class Rook : IPiece
     {
         public Rook(bool isWhite)
         {
@@ -37,7 +37,7 @@ namespace NewChess
                     }
                     else
                     {
-                        if (board.IsWhite((int)newPosition.X, (int)newPosition.Y) == isWhite)
+                        if (board.IsWhite((int)newPosition.X, (int)newPosition.Y) != isWhite)
                         {
                             validMoves.Add(newPosition);
                         }
