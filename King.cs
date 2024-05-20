@@ -15,7 +15,7 @@ namespace NewChess
             this.isWhite = isWhite;
             this.HasMoved = false;
         }
-        public override List<Vector2> GetValidMoves(Vector2 currentPosition, Board board) 
+        public override List<Vector2> GetValidMoves(Vector2 currentPosition, Board board, bool checkingForCheck = true, bool checkingForPin = true) 
         {
             var validMoves = new List<Vector2>();
             var possibleOffsets = new[]
@@ -48,6 +48,17 @@ namespace NewChess
                     validMoves.Add(currentPosition + new Vector2(0, -2));
                 }
             }
+
+            if (!checkingForCheck)
+            {
+                return validMoves;
+            }
+
+            if (board.IsInCheck(isWhite))
+            {
+                validMoves = validMoves.Where(move => board.MoveBlocksCheck(currentPosition, move)).ToList();
+            }
+
             return validMoves;
         }
         private bool CanCastle(Vector2 currentPosition, Board board, int rookCol)

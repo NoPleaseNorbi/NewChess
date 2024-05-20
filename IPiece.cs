@@ -11,6 +11,6 @@ namespace NewChess
     {
         public bool isWhite { get; set; }
         public bool HasMoved { get; set; }
-        public abstract List<Vector2> GetValidMoves(Vector2 currentPosition, Board board);
+        public abstract List<Vector2> GetValidMoves(Vector2 currentPosition, Board board, bool checkingForCheck = true, bool checkingForPin = true);
     }
 }

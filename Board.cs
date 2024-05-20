@@ -98,7 +98,7 @@ namespace NewChess
                 board[row, col].HasMoved = true;
             }
         }
-        private Vector2 FindKingPosition(bool isWhite)
+        public Vector2 FindKingPosition(bool isWhite)
         {
             for (int row = 0; row < 8; row++)
             {
@@ -107,7 +107,7 @@ namespace NewChess
                     IPiece piece = board[row, col];
                     if (piece is King && piece.isWhite == isWhite)
                     {
-                        return new Vector2(col, row);
+                        return new Vector2(row, col);
                     }
                 }
             }
@@ -124,14 +124,58 @@ namespace NewChess
                     IPiece piece = board[row, col];
                     if (piece != null && piece.isWhite != isWhite)
                     {
-                        if (piece.GetValidMoves(new Vector2(col, row), this).Contains(kingPosition))
+                        List<Vector2> validMoves = piece.GetValidMoves(new Vector2(row, col), this, false, false);
+                        if (validMoves.Contains(kingPosition))
                         {
                             return true;
                         }
                     }
                 }
             }
-            return false; 
+            return false;
+        }
+
+        public bool MoveBlocksCheck(Vector2 startPos, Vector2 endPos)
+        {
+            IPiece piece = GetPiece((int)startPos.X, (int)startPos.Y);
+            RemovePiece((int)startPos.X, (int)startPos.Y);
+
+            IPiece removedPiece = GetPiece((int)endPos.X, (int)endPos.Y);
+            SetPiece((int)endPos.X, (int)endPos.Y, piece);
+
+            bool stillInCheck = IsInCheck(piece.isWhite);
+
+            SetPiece((int)startPos.X, (int)startPos.Y, piece);
+
+            RemovePiece((int)endPos.X, (int)endPos.Y);
+
+            if (removedPiece != null)
+            {
+                SetPiece((int)endPos.X, (int)endPos.Y, removedPiece);
+            }
+
+            return !stillInCheck;
+        }
+
+        public bool MoveDoesntCauseCheck(Vector2 startPos, Vector2 endPos) 
+        {
+            IPiece piece = GetPiece((int)startPos.X, (int)startPos.Y);
+            RemovePiece((int)startPos.X, (int)startPos.Y);
+
+            IPiece removedPiece = GetPiece((int)endPos.X, (int)endPos.Y);
+            SetPiece((int)endPos.X, (int)endPos.Y, piece);
+
+            bool kingInCheck = IsInCheck(piece.isWhite);
+
+            SetPiece((int)startPos.X, (int)startPos.Y, piece);
+            RemovePiece((int)endPos.X, (int)endPos.Y);
+
+            if (removedPiece != null)
+            {
+                SetPiece((int)endPos.X, (int)endPos.Y, removedPiece);
+            }
+
+            return !kingInCheck;
         }
     }
 }
