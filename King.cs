@@ -48,6 +48,10 @@ namespace NewChess
                     validMoves.Add(currentPosition + new Vector2(0, -2));
                 }
             }
+            if (checkingForPin)
+            {
+                validMoves = validMoves.Where(move => board.MoveDoesntCauseCheck(currentPosition, move)).ToList();
+            }
 
             if (!checkingForCheck)
             {

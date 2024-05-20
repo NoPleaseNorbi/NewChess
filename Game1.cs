@@ -37,6 +37,9 @@ namespace NewChess
 
         private IPiece _draggedPiece;
         List<Vector2> _avalaibleMoveSquares;
+        private SpriteFont _font;
+        private EndOfGamePopUp _checkmatePopup;
+
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -76,6 +79,10 @@ namespace NewChess
             blackRookTexture = Content.Load<Texture2D>("black-rook");
             blackQueenTexture = Content.Load<Texture2D>("black-queen");
             blackKingTexture = Content.Load<Texture2D>("black-king");
+
+            _font = Content.Load<SpriteFont>("Font");
+            _checkmatePopup = new EndOfGamePopUp(_spriteBatch, _font, "Checkmate!", new Vector2(300, 200));
+
         }
 
         private Vector2? GetBoardPosition(Point mousePosition)
@@ -159,7 +166,13 @@ namespace NewChess
                 previousMousePosition = null;
                 selectedPiecePosition = null;
                 _draggedPiece = null;
+                if (_board.IsCheckmate(_board.GetTurn()))
+                {
+                    _checkmatePopup.Show();
+                }
             }
+            
+            _checkmatePopup.Update(gameTime);
             base.Update(gameTime);
         }
 
@@ -259,8 +272,8 @@ namespace NewChess
                 }
                 
             }
+            _checkmatePopup.Draw(_spriteBatch);
             _spriteBatch.End();
-
             base.Draw(gameTime);
         }
     }

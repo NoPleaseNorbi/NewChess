@@ -177,5 +177,47 @@ namespace NewChess
 
             return !kingInCheck;
         }
+
+        public bool IsCheckmate(bool isWhiteTurn)
+        {
+            if (!IsInCheck(isWhiteTurn))
+                return false;
+
+            for (int row = 0; row < 8; row++)
+            {
+                for (int col = 0; col < 8; col++)
+                {
+                    IPiece piece = GetPiece(row, col);
+                    if (piece != null && piece.isWhite == isWhiteTurn)
+                    {
+                        if (piece.GetValidMoves(new Vector2(row, col), this).Count > 0)
+                            return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        public bool IsStalemate(bool isWhiteTurn)
+        {
+            if (IsInCheck(isWhiteTurn))
+                return false; 
+
+            for (int row = 0; row < 8; row++)
+            {
+                for (int col = 0; col < 8; col++)
+                {
+                    IPiece piece = GetPiece(row, col);
+                    if (piece != null && piece.isWhite == isWhiteTurn)
+                    {
+                        if (piece.GetValidMoves(new Vector2(row, col), this).Count > 0)
+                            return false; 
+                    }
+                }
+            }
+
+            return true;
+        }
     }
 }
