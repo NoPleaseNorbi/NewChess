@@ -38,7 +38,9 @@ namespace NewChess
         private IPiece _draggedPiece;
         List<Vector2> _avalaibleMoveSquares;
         private SpriteFont _font;
-        private EndOfGamePopUp _checkmatePopup;
+        private Button _restartButton;
+        private string textToShow;
+        private AIPlayer _aiplayer;
 
         public Game1()
         {
@@ -51,11 +53,13 @@ namespace NewChess
         {
             _graphics.IsFullScreen = false;
             _graphics.PreferredBackBufferWidth = 800;
-            _graphics.PreferredBackBufferHeight = 800;
+            _graphics.PreferredBackBufferHeight = 1200;
             _graphics.ApplyChanges();
             _draggedPiece = null;
             _board = new Board();
             _avalaibleMoveSquares = null;
+            textToShow = "White's turn";
+            _aiplayer = new AIPlayer(false);
             base.Initialize();
         }
 
@@ -81,8 +85,7 @@ namespace NewChess
             blackKingTexture = Content.Load<Texture2D>("black-king");
 
             _font = Content.Load<SpriteFont>("Font");
-            _checkmatePopup = new EndOfGamePopUp(_spriteBatch, _font, "Checkmate!", new Vector2(300, 200));
-
+            _restartButton = new Button(_font, "Restart the game", new Vector2(230, 800), new Color(166, 123, 91), new Color(254, 216, 177));
         }
 
         private Vector2? GetBoardPosition(Point mousePosition)
@@ -101,6 +104,10 @@ namespace NewChess
         }
         protected override void Update(GameTime gameTime)
         {
+            if (_restartButton.ButtonPressed()) 
+            {
+                _board = new Board();
+            }
             var mouse = Mouse.GetState();
             if (mouse.LeftButton == ButtonState.Pressed)
             {
@@ -158,21 +165,43 @@ namespace NewChess
                         else
                         {
                             _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y, _draggedPiece);
+                            _avalaibleMoveSquares = null;
                         }
-                    }            
+                    }
+                    textToShow = _board.GetTurn() ? "White's turn" : "Black's turn";
+                    if (_board.IsCheckmate(_board.GetTurn()))
+                    {
+                        if (_board.GetTurn())
+                        {
+                            textToShow = "Black wins!";
+                        }
+                        else
+                        {
+                            textToShow = "White wins!";
+                        }
+                    }
+                    else if (_board.IsStalemate(_board.GetTurn()))
+                    {
+                        textToShow = "Stalemate!";
+                    }
                 }
-
+                if (!_board.GetTurn()) 
+                {
+                    (Vector2? From, Vector2? To) = _aiplayer.GetBestMove(_board, 3);
+                    if (From != null && To != null) 
+                    {
+                        IPiece piece = _board.GetPiece((int)From.Value.X, (int)From.Value.Y);
+                        _board.RemovePiece((int)From.Value.X, (int)From.Value.Y);
+                        _board.SetPiece((int)To.Value.X, (int)To.Value.Y, piece);
+                        _board.NextTurn();
+                    }
+                }
                 initialMousePosition = null;
                 previousMousePosition = null;
                 selectedPiecePosition = null;
                 _draggedPiece = null;
-                if (_board.IsCheckmate(_board.GetTurn()))
-                {
-                    _checkmatePopup.Show();
-                }
             }
-            
-            _checkmatePopup.Update(gameTime);
+            _restartButton.Update(gameTime);
             base.Update(gameTime);
         }
 
@@ -208,14 +237,14 @@ namespace NewChess
         }
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
-
+            GraphicsDevice.Clear(new Color (236, 177, 118));
             _spriteBatch.Begin();
             const int boardOffSetX = 80;
             const int boardOffSetY = 50;
             const int squareSize = 80;
-            Color lightSquareColor = Color.LightYellow;
-            Color darkSquareColor = Color.SaddleBrown;
+            Vector2 gameFinishedTextPosition = new Vector2(280, 900);
+            Color darkSquareColor = new Color(111, 78, 55);
+            Color lightSquareColor = new Color(254, 216, 177);
             for (int row = 0; row < 8; row++)
             {
                 for (int col = 0; col < 8; col++)
@@ -272,7 +301,8 @@ namespace NewChess
                 }
                 
             }
-            _checkmatePopup.Draw(_spriteBatch);
+            _restartButton.Draw(_spriteBatch);
+            _spriteBatch.DrawString(_font, textToShow, gameFinishedTextPosition, Color.Black);
             _spriteBatch.End();
             base.Draw(gameTime);
         }

@@ -17,6 +17,7 @@ namespace NewChess
         {
             board = new IPiece[8, 8];
             whitesTurn = true;
+            
             // Set up starting positions for white pieces
 
             board[0, 0] = new Rook(false);
@@ -46,7 +47,6 @@ namespace NewChess
                 board[6, col] = new Pawn(true);
             }
         }
-
         public bool GetTurn() {
             return whitesTurn;
         }
@@ -115,24 +115,31 @@ namespace NewChess
         }
         public bool IsInCheck(bool isWhite)
         {
-            Vector2 kingPosition = FindKingPosition(isWhite);
-
-            for (int row = 0; row < 8; row++)
+            try 
             {
-                for (int col = 0; col < 8; col++)
+                Vector2 kingPosition = FindKingPosition(isWhite);
+
+                for (int row = 0; row < 8; row++)
                 {
-                    IPiece piece = board[row, col];
-                    if (piece != null && piece.isWhite != isWhite)
+                    for (int col = 0; col < 8; col++)
                     {
-                        List<Vector2> validMoves = piece.GetValidMoves(new Vector2(row, col), this, false, false);
-                        if (validMoves.Contains(kingPosition))
+                        IPiece piece = board[row, col];
+                        if (piece != null && piece.isWhite != isWhite)
                         {
-                            return true;
+                            List<Vector2> validMoves = piece.GetValidMoves(new Vector2(row, col), this, false, false);
+                            if (validMoves.Contains(kingPosition))
+                            {
+                                return true;
+                            }
                         }
                     }
                 }
+                return false;
             }
-            return false;
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
         }
 
         public bool MoveBlocksCheck(Vector2 startPos, Vector2 endPos)
@@ -180,23 +187,32 @@ namespace NewChess
 
         public bool IsCheckmate(bool isWhiteTurn)
         {
-            if (!IsInCheck(isWhiteTurn))
-                return false;
-
-            for (int row = 0; row < 8; row++)
+            try
             {
-                for (int col = 0; col < 8; col++)
+                Vector2 kingPosition = FindKingPosition(isWhiteTurn);
+
+                if (!IsInCheck(isWhiteTurn))
+                    return false;
+
+                for (int row = 0; row < 8; row++)
                 {
-                    IPiece piece = GetPiece(row, col);
-                    if (piece != null && piece.isWhite == isWhiteTurn)
+                    for (int col = 0; col < 8; col++)
                     {
-                        if (piece.GetValidMoves(new Vector2(row, col), this).Count > 0)
-                            return false;
+                        IPiece piece = GetPiece(row, col);
+                        if (piece != null && piece.isWhite == isWhiteTurn)
+                        {
+                            if (piece.GetValidMoves(new Vector2(row, col), this).Count > 0)
+                                return false;
+                        }
                     }
                 }
-            }
 
-            return true;
+                return true; 
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
         }
 
         public bool IsStalemate(bool isWhiteTurn)

@@ -34,20 +34,6 @@ namespace NewChess
                     validMoves.Add(newPosition);
                 }
             }
-            if (!HasMoved)
-            {
-                // Kingside castling
-                if (CanCastle(currentPosition, board, 7)) // Check kingside rook
-                {
-                    validMoves.Add(currentPosition + new Vector2(0, 2));
-                }
-
-                // Queenside castling
-                if (CanCastle(currentPosition, board, 0)) // Check queenside rook
-                {
-                    validMoves.Add(currentPosition + new Vector2(0, -2));
-                }
-            }
             if (checkingForPin)
             {
                 validMoves = validMoves.Where(move => board.MoveDoesntCauseCheck(currentPosition, move)).ToList();
@@ -62,33 +48,42 @@ namespace NewChess
             {
                 validMoves = validMoves.Where(move => board.MoveBlocksCheck(currentPosition, move)).ToList();
             }
+            else {
+                if (!HasMoved)
+                {
+                    // Kingside castling
+                    if (CanCastle(currentPosition, board, 7)) // Check kingside rook
+                    {
+                        validMoves.Add(currentPosition + new Vector2(0, 2));
+                    }
+
+                    // Queenside castling
+                    if (CanCastle(currentPosition, board, 0)) // Check queenside rook
+                    {
+                        validMoves.Add(currentPosition + new Vector2(0, -2));
+                    }
+                }
+            }
 
             return validMoves;
         }
         private bool CanCastle(Vector2 currentPosition, Board board, int rookCol)
         {
-            // Check if the rook has moved
             var rook = board.board[(!isWhite ? 0 : 7), rookCol];
             if (rook == null || rook is not Rook || rook.isWhite != isWhite)
             {
                 return false;
             }
 
-            // Check if there are pieces between king and rook
-            int startCol = (int)currentPosition.Y + (rookCol == 7 ? 1 : -1); // Kingside or queenside?
-            int endCol = rookCol - (rookCol == 7 ? 1 : 0); // Rook's final position
-            for (int col = startCol; col != endCol; col += (rookCol == 7 ? 1 : -1)) // Iterate towards the rook
+
+            int startCol = (int)currentPosition.Y + (rookCol == 7 ? 1 : -1); 
+            int endCol = rookCol - (rookCol == 7 ? 1 : 0); 
+            for (int col = startCol; col != endCol; col += (rookCol == 7 ? 1 : -1)) 
             {
                 if (board.GetPiece((int)currentPosition.X, col) != null)
                 {
-                    return false; // Piece in the way
+                    return false;
                 }
-            }
-
-            // Check if squares are under attack (you'll need to implement this based on your game rules)
-            for (int col = (int)currentPosition.Y; col != endCol + (rookCol == 7 ? 1 : -1); col += (rookCol == 7 ? 1 : -1))
-            {
-                //
             }
             return true;
         }
