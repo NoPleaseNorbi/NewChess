@@ -56,7 +56,14 @@ namespace NewChess
         }
         public IPiece GetPiece(int row, int col)
         {
-            return board[row, col];
+            try 
+            {
+                return board[row, col];
+            }
+            catch (Exception) 
+            {
+                return null;
+            }
         }
 
         public bool IsWhite(int row, int col)

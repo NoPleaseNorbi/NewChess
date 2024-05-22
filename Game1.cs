@@ -9,6 +9,11 @@ using static System.Formats.Asn1.AsnWriter;
 
 namespace NewChess
 {
+    public enum GameMode 
+    {
+        PlayerVsPlayer,
+        PlayerVsAI
+    }
     public class Game1 : Game
     {
         private Vector2? selectedPiecePosition;
@@ -42,6 +47,10 @@ namespace NewChess
         private string textToShow;
         private AIPlayer _aiplayer;
 
+        private Menu _menu;
+        private bool _showMenu;
+        private GameMode _gameMode;
+
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -58,8 +67,10 @@ namespace NewChess
             _draggedPiece = null;
             _board = new Board();
             _avalaibleMoveSquares = null;
-            textToShow = "White's turn";
+            textToShow = "";
             _aiplayer = new AIPlayer(false);
+            _showMenu = true;
+            _gameMode = GameMode.PlayerVsPlayer;
             base.Initialize();
         }
 
@@ -86,6 +97,8 @@ namespace NewChess
 
             _font = Content.Load<SpriteFont>("Font");
             _restartButton = new Button(_font, "Restart the game", new Vector2(230, 800), new Color(166, 123, 91), new Color(254, 216, 177));
+            _menu = new Menu(_font, _graphics);
+
         }
 
         private Vector2? GetBoardPosition(Point mousePosition)
@@ -104,104 +117,150 @@ namespace NewChess
         }
         protected override void Update(GameTime gameTime)
         {
-            if (_restartButton.ButtonPressed()) 
+            if (_showMenu)
             {
-                _board = new Board();
-            }
-            var mouse = Mouse.GetState();
-            if (mouse.LeftButton == ButtonState.Pressed)
-            {
-                if (selectedPiecePosition == null)
+                _menu.Update(gameTime);
+
+                Menu.MenuState menuState = _menu.GetMenuState();
+                if (menuState == Menu.MenuState.Exit) 
                 {
-                    // Try to select a piece
-                    selectedPiecePosition = GetBoardPosition(mouse.Position);
-                    initialMousePosition = new Vector2(mouse.Position.X, mouse.Position.Y);
-                    if (selectedPiecePosition != null) { 
-                        if (_board.GetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y) != null) {
-                            if (_board.GetTurn() == _board.IsWhite((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y)) {
-                                _draggedPiece = _board.GetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y);
-                                _avalaibleMoveSquares = _draggedPiece.GetValidMoves(selectedPiecePosition.Value, _board);
-                                _board.RemovePiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y);
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    previousMousePosition = new Vector2(mouse.Position.X, mouse.Position.Y);
+                    Exit();
                 }
 
+                if (menuState == Menu.MenuState.VsAI) 
+                {
+                    _showMenu = false;
+                    _gameMode = GameMode.PlayerVsAI;
+                }
+                if (menuState == Menu.MenuState.OneOnOne) 
+                {
+                    _showMenu = false;
+                    _gameMode = GameMode.PlayerVsPlayer;
+                }
             }
-            else if (mouse.LeftButton == ButtonState.Released && selectedPiecePosition.HasValue)
+            else
             {
-                // Drop the piece
-                var dropPosition = GetBoardPosition(mouse.Position);
-                if (dropPosition.HasValue)
-                {               
-                    // Update the board
-                    if (_draggedPiece != null) {
-                        if (_avalaibleMoveSquares.Contains(new Vector2(dropPosition.Value.X, dropPosition.Value.Y)))
+                if (_restartButton.ButtonPressed())
+                {
+                    _board = new Board();
+                }
+                var mouse = Mouse.GetState();
+                if (mouse.LeftButton == ButtonState.Pressed)
+                {
+                    if (selectedPiecePosition == null)
+                    {
+                        // Try to select a piece
+                        selectedPiecePosition = GetBoardPosition(mouse.Position);
+                        initialMousePosition = new Vector2(mouse.Position.X, mouse.Position.Y);
+                        if (selectedPiecePosition != null)
                         {
-                            _board.SetPiece((int)dropPosition.Value.X, (int)dropPosition.Value.Y, _draggedPiece);
-                            if (_draggedPiece is King) 
+                            if (_board.GetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y) != null)
                             {
-                                _board.KingMove((int)dropPosition.Value.X, (int)dropPosition.Value.Y);
-                                if ((int)dropPosition.Value.Y - (int)selectedPiecePosition.Value.Y == 2) 
+                                if (_board.GetTurn() == _board.IsWhite((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y))
                                 {
-                                    IPiece rook = _board.GetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y + 3);
-                                    _board.RemovePiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y + 3);
-                                    _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y + 1, rook);
-                                }
-                                if ((int)dropPosition.Value.Y - (int)selectedPiecePosition.Value.Y == -2)
-                                {
-                                    IPiece rook = _board.GetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y - 4);
-                                    _board.RemovePiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y - 4);
-                                    _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y - 1, rook);
+                                    _draggedPiece = _board.GetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y);
+                                    _avalaibleMoveSquares = _draggedPiece.GetValidMoves(selectedPiecePosition.Value, _board);
+                                    _board.RemovePiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y);
                                 }
                             }
-                            _board.NextTurn();
-                            _avalaibleMoveSquares = null;
-                        }
-                        else
-                        {
-                            _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y, _draggedPiece);
-                            _avalaibleMoveSquares = null;
                         }
                     }
-                    textToShow = _board.GetTurn() ? "White's turn" : "Black's turn";
-                    if (_board.IsCheckmate(_board.GetTurn()))
+                    else
                     {
-                        if (_board.GetTurn())
-                        {
-                            textToShow = "Black wins!";
-                        }
-                        else
-                        {
-                            textToShow = "White wins!";
-                        }
+                        previousMousePosition = new Vector2(mouse.Position.X, mouse.Position.Y);
                     }
-                    else if (_board.IsStalemate(_board.GetTurn()))
-                    {
-                        textToShow = "Stalemate!";
-                    }
+
                 }
-                if (!_board.GetTurn()) 
+                else if (mouse.LeftButton == ButtonState.Released && selectedPiecePosition.HasValue)
                 {
-                    (Vector2? From, Vector2? To) = _aiplayer.GetBestMove(_board, 3);
-                    if (From != null && To != null) 
+                    // Drop the piece
+                    var dropPosition = GetBoardPosition(mouse.Position);
+                    if (dropPosition.HasValue)
                     {
-                        IPiece piece = _board.GetPiece((int)From.Value.X, (int)From.Value.Y);
-                        _board.RemovePiece((int)From.Value.X, (int)From.Value.Y);
-                        _board.SetPiece((int)To.Value.X, (int)To.Value.Y, piece);
-                        _board.NextTurn();
+                        // Update the board
+                        if (_draggedPiece != null)
+                        {
+                            if (_avalaibleMoveSquares.Contains(new Vector2(dropPosition.Value.X, dropPosition.Value.Y)))
+                            {
+                                _board.SetPiece((int)dropPosition.Value.X, (int)dropPosition.Value.Y, _draggedPiece);
+                                if (_draggedPiece is King)
+                                {
+                                    _board.KingMove((int)dropPosition.Value.X, (int)dropPosition.Value.Y);
+                                    if ((int)dropPosition.Value.Y - (int)selectedPiecePosition.Value.Y == 2)
+                                    {
+                                        IPiece rook = _board.GetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y + 3);
+                                        _board.RemovePiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y + 3);
+                                        _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y + 1, rook);
+                                    }
+                                    if ((int)dropPosition.Value.Y - (int)selectedPiecePosition.Value.Y == -2)
+                                    {
+                                        IPiece rook = _board.GetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y - 4);
+                                        _board.RemovePiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y - 4);
+                                        _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y - 1, rook);
+                                    }
+                                }
+                                _board.NextTurn();
+                                _avalaibleMoveSquares = null;
+                            }
+                            else
+                            {
+                                _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y, _draggedPiece);
+                                _avalaibleMoveSquares = null;
+                            }
+                        }
+                        if (_board.IsCheckmate(_board.GetTurn()))
+                        {
+                            if (_board.GetTurn())
+                            {
+                                textToShow = "Black wins!";
+                            }
+                            else
+                            {
+                                textToShow = "White wins!";
+                            }
+                        }
+                        else if (_board.IsStalemate(_board.GetTurn()))
+                        {
+                            textToShow = "Stalemate!";
+                        }
                     }
+                    if (_gameMode == GameMode.PlayerVsAI) 
+                    {
+                        if (!_board.GetTurn())
+                        {
+                            (Vector2? From, Vector2? To) = _aiplayer.GetBestMove(_board, 3);
+                            if (From != null && To != null)
+                            {
+                                IPiece piece = _board.GetPiece((int)From.Value.X, (int)From.Value.Y);
+                                _board.RemovePiece((int)From.Value.X, (int)From.Value.Y);
+                                _board.SetPiece((int)To.Value.X, (int)To.Value.Y, piece);
+                                _board.NextTurn();
+                            }
+                            if (_board.IsCheckmate(_board.GetTurn()))
+                            {
+                                if (_board.GetTurn())
+                                {
+                                    textToShow = "Black wins!";
+                                }
+                                else
+                                {
+                                    textToShow = "White wins!";
+                                }
+                            }
+                            else if (_board.IsStalemate(_board.GetTurn()))
+                            {
+                                textToShow = "Stalemate!";
+                            }
+                        }
+                    }
+                    
+                    initialMousePosition = null;
+                    previousMousePosition = null;
+                    selectedPiecePosition = null;
+                    _draggedPiece = null;
                 }
-                initialMousePosition = null;
-                previousMousePosition = null;
-                selectedPiecePosition = null;
-                _draggedPiece = null;
+                _restartButton.Update(gameTime);
             }
-            _restartButton.Update(gameTime);
             base.Update(gameTime);
         }
 
@@ -216,21 +275,51 @@ namespace NewChess
 
             if (piece.isWhite)
             {
-                if (piece is Pawn) texture = whitePawnTexture;
-                else if (piece is Rook) texture = whiteRookTexture;
-                else if (piece is Knight) texture = whiteKnightTexture;
-                else if (piece is Bishop) texture = whiteBishopTexture;
-                else if (piece is Queen) texture = whiteQueenTexture;
-                else if (piece is King) texture = whiteKingTexture;
+                switch (piece)
+                {
+                    case Pawn:
+                        texture = whitePawnTexture;
+                        break;
+                    case Rook:
+                        texture = whiteRookTexture;
+                        break;
+                    case Knight:
+                        texture = whiteKnightTexture;
+                        break;
+                    case Bishop:
+                        texture = whiteBishopTexture;
+                        break;
+                    case Queen:
+                        texture = whiteQueenTexture;
+                        break;
+                    case King:
+                        texture = whiteKingTexture;
+                        break;
+                }
             }
             else
             {
-                if (piece is Pawn) texture = blackPawnTexture;
-                else if (piece is Rook) texture = blackRookTexture;
-                else if (piece is Knight) texture = blackKnightTexture;
-                else if (piece is Bishop) texture = blackBishopTexture;
-                else if (piece is Queen) texture = blackQueenTexture;
-                else if (piece is King) texture = blackKingTexture;
+                switch (piece)
+                {
+                    case Pawn:
+                        texture = blackPawnTexture;
+                        break;
+                    case Rook:
+                        texture = blackRookTexture;
+                        break;
+                    case Knight:
+                        texture = blackKnightTexture;
+                        break;
+                    case Bishop:
+                        texture = blackBishopTexture;
+                        break;
+                    case Queen:
+                        texture = blackQueenTexture;
+                        break;
+                    case King:
+                        texture = blackKingTexture;
+                        break;
+                }
             }
 
             return texture;
@@ -239,70 +328,78 @@ namespace NewChess
         {
             GraphicsDevice.Clear(new Color (236, 177, 118));
             _spriteBatch.Begin();
-            const int boardOffSetX = 80;
-            const int boardOffSetY = 50;
-            const int squareSize = 80;
-            Vector2 gameFinishedTextPosition = new Vector2(280, 900);
-            Color darkSquareColor = new Color(111, 78, 55);
-            Color lightSquareColor = new Color(254, 216, 177);
-            for (int row = 0; row < 8; row++)
+            if (_showMenu)
             {
-                for (int col = 0; col < 8; col++)
+                _menu.Draw(_spriteBatch);
+            }
+            else
+            {
+                const int boardOffSetX = 80;
+                const int boardOffSetY = 50;
+                const int squareSize = 80;
+                Vector2 gameFinishedTextPosition = new Vector2(280, 900);
+                Color darkSquareColor = new Color(111, 78, 55);
+                Color lightSquareColor = new Color(254, 216, 177);
+                for (int row = 0; row < 8; row++)
                 {
-                    Color squareColor = (row + col) % 2 == 0 ? lightSquareColor : darkSquareColor;
-                    Rectangle squareRect = new Rectangle(boardOffSetX + col * squareSize, boardOffSetY + row * squareSize, squareSize, squareSize);
-                    if (_avalaibleMoveSquares != null) 
+                    for (int col = 0; col < 8; col++)
                     {
-                        if (_avalaibleMoveSquares.Contains(new Vector2(row, col))) 
+                        Color squareColor = (row + col) % 2 == 0 ? lightSquareColor : darkSquareColor;
+                        Rectangle squareRect = new Rectangle(boardOffSetX + col * squareSize, boardOffSetY + row * squareSize, squareSize, squareSize);
+                        if (_avalaibleMoveSquares != null)
                         {
-                            squareColor = new Color(153, 23, 40);
+                            if (_avalaibleMoveSquares.Contains(new Vector2(row, col)))
+                            {
+                                squareColor = new Color(153, 23, 40);
+                            }
                         }
-                    }
-                    _spriteBatch.Draw(cellTexture, squareRect, squareColor);
+                        _spriteBatch.Draw(cellTexture, squareRect, squareColor);
 
+                        Texture2D pieceTexture = null;
+                        if (_board.board[row, col] != null)
+                        {
+                            pieceTexture = GetPieceTexture(_board.board[row, col]);
+                            if (pieceTexture != null)
+                            {
+                                float pieceX = squareRect.X + (squareSize - pieceTexture.Width) / 2;
+                                float pieceY = squareRect.Y + (squareSize - pieceTexture.Height) / 2;
+                                float scale = 0.7f;
+
+                                pieceX += ((pieceTexture.Width * (1 - scale)) / 2);
+                                pieceY += ((pieceTexture.Height * (1 - scale)) / 2);
+
+                                _spriteBatch.Draw(pieceTexture, new Vector2(pieceX, pieceY), null, Color.White, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+                            }
+                        }
+
+                    }
+                }
+
+                if (selectedPiecePosition.HasValue && initialMousePosition.HasValue && previousMousePosition.HasValue)
+                {
                     Texture2D pieceTexture = null;
-                    if (_board.board[row, col] != null) 
+                    if (_draggedPiece != null)
                     {
-                        pieceTexture = GetPieceTexture(_board.board[row, col]);
+                        pieceTexture = GetPieceTexture(_draggedPiece);
                         if (pieceTexture != null)
                         {
-                            float pieceX = squareRect.X + (squareSize - pieceTexture.Width) / 2;
-                            float pieceY = squareRect.Y + (squareSize - pieceTexture.Height) / 2;
+                            var mousePosition = Mouse.GetState().Position;
                             float scale = 0.7f;
 
-                            pieceX += ((pieceTexture.Width * (1 - scale)) / 2);
-                            pieceY += ((pieceTexture.Height * (1 - scale)) / 2);
+                            // Center the piece under the mouse cursor
+                            Vector2 piecePosition = new Vector2(
+                                mousePosition.X - (pieceTexture.Width * scale) / 2,
+                                mousePosition.Y - (pieceTexture.Height * scale) / 2
+                            );
 
-                            _spriteBatch.Draw(pieceTexture, new Vector2(pieceX, pieceY), null, Color.White, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+                            _spriteBatch.Draw(pieceTexture, piecePosition, null, Color.White, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
                         }
-                    }          
-
-                }
-            }
-
-            if (selectedPiecePosition.HasValue && initialMousePosition.HasValue && previousMousePosition.HasValue)
-            {
-                Texture2D pieceTexture = null;
-                if (_draggedPiece != null) { 
-                    pieceTexture = GetPieceTexture(_draggedPiece);
-                    if (pieceTexture != null)
-                    {
-                        var mousePosition = Mouse.GetState().Position;
-                        float scale = 0.7f;
-
-                        // Center the piece under the mouse cursor
-                        Vector2 piecePosition = new Vector2(
-                            mousePosition.X - (pieceTexture.Width * scale) / 2,
-                            mousePosition.Y - (pieceTexture.Height * scale) / 2
-                        );
-
-                        _spriteBatch.Draw(pieceTexture, piecePosition, null, Color.White, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
                     }
+
                 }
-                
+                _restartButton.Draw(_spriteBatch);
+                _spriteBatch.DrawString(_font, textToShow, gameFinishedTextPosition, Color.Black);
             }
-            _restartButton.Draw(_spriteBatch);
-            _spriteBatch.DrawString(_font, textToShow, gameFinishedTextPosition, Color.Black);
             _spriteBatch.End();
             base.Draw(gameTime);
         }
