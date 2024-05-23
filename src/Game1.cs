@@ -9,17 +9,36 @@ using static System.Formats.Asn1.AsnWriter;
 
 namespace NewChess
 {
-    public enum GameMode 
+    /// <summary>
+    /// The enumeration for the gamemode
+    /// </summary>
+    public enum GameMode
     {
         PlayerVsPlayer,
         PlayerVsAI
     }
-    public class Game1 : Game
+
+    /// <summary>
+    /// The main NewChess class
+    /// </summary>
+    public class NewChess : Game
     {
+        /// <summary>
+        /// The selected piece's position
+        /// </summary>
         private Vector2? selectedPiecePosition;
+
+        /// <summary>
+        /// The initial position of the mouse when the drag happened
+        /// </summary>
         private Vector2? initialMousePosition;
+
+        /// <summary>
+        /// The previous position of the mouse
+        /// </summary>
         private Vector2? previousMousePosition;
 
+        // The textures of the pieces
         Texture2D whitePawnTexture;
         Texture2D whiteBishopTexture;
         Texture2D whiteKnightTexture;
@@ -34,34 +53,73 @@ namespace NewChess
         Texture2D blackQueenTexture;
         Texture2D blackKingTexture;
 
+        /// <summary>
+        /// The texture for the cell
+        /// </summary>
         Texture2D cellTexture;
+
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
 
+        /// <summary>
+        /// The board representing the chessboard
+        /// </summary>
         private Board _board;
 
+        /// <summary>
+        /// The menu of the application
+        /// </summary>
+        private Menu _menu;
+
+        /// <summary>
+        /// The restart button 
+        /// </summary>
+        private Button _restartButton;
+
+        /// <summary>
+        /// The exit button
+        /// </summary>
+        private Button _exitButton;
+
+        /// <summary>
+        /// The dragged piece
+        /// </summary>
         private IPiece _draggedPiece;
+
+        /// <summary>
+        /// The avalaible moves for the dragged piece
+        /// </summary>
         List<Vector2> _avalaibleMoveSquares;
         private SpriteFont _font;
-        private Button _restartButton;
+
+
         private string textToShow;
+
+        /// <summary>
+        /// The AI player
+        /// </summary>
         private AIPlayer _aiplayer;
 
-        private Menu _menu;
         private bool _showMenu;
         private GameMode _gameMode;
-        private Button _exitButton;
 
         const int boardOffSetX = 80;
         const int boardOffSetY = 50;
         const int squareSize = 80;
-        public Game1()
+
+        /// <summary>
+        /// The constructor of the main game class
+        /// </summary>
+        public NewChess()
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
-            IsMouseVisible = true;       
+            IsMouseVisible = true;
         }
 
+        /// <summary>
+        /// Initializes variables
+        /// </summary>
         protected override void Initialize()
         {
             _graphics.IsFullScreen = false;
@@ -78,6 +136,10 @@ namespace NewChess
             base.Initialize();
         }
 
+
+        /// <summary>
+        /// Loads textures 
+        /// </summary>
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
@@ -106,10 +168,14 @@ namespace NewChess
 
         }
 
+        /// <summary>
+        /// Gets the position of the mouse 
+        /// </summary>
+        /// <param name="mousePosition">The position of the mouse</param>
+        /// <returns>The position of the mouse on the board</returns>
         private Vector2? GetBoardPosition(Point mousePosition)
         {
-            if (mousePosition.X >= boardOffSetX && mousePosition.X < boardOffSetX + 8 * squareSize &&
-        mousePosition.Y >= boardOffSetY && mousePosition.Y < boardOffSetY + 8 * squareSize)
+            if (mousePosition.X >= boardOffSetX && mousePosition.X < boardOffSetX + 8 * squareSize && mousePosition.Y >= boardOffSetY && mousePosition.Y < boardOffSetY + 8 * squareSize)
             {
                 int col = (mousePosition.X - boardOffSetX) / squareSize;
                 int row = (mousePosition.Y - boardOffSetY) / squareSize;
@@ -119,6 +185,11 @@ namespace NewChess
 
             return null;
         }
+
+        /// <summary>
+        /// The update method of the main game class
+        /// </summary>
+        /// <param name="gameTime">The time elapsed in the application</param>
         protected override void Update(GameTime gameTime)
         {
             if (_showMenu)
@@ -126,17 +197,17 @@ namespace NewChess
                 _menu.Update(gameTime);
 
                 Menu.MenuState menuState = _menu.GetMenuState();
-                if (menuState == Menu.MenuState.Exit) 
+                if (menuState == Menu.MenuState.Exit)
                 {
                     Exit();
                 }
 
-                if (menuState == Menu.MenuState.VsAI) 
+                if (menuState == Menu.MenuState.VsAI)
                 {
                     _showMenu = false;
                     _gameMode = GameMode.PlayerVsAI;
                 }
-                if (menuState == Menu.MenuState.OneOnOne) 
+                if (menuState == Menu.MenuState.OneOnOne)
                 {
                     _showMenu = false;
                     _gameMode = GameMode.PlayerVsPlayer;
@@ -147,6 +218,7 @@ namespace NewChess
                 var mouse = Mouse.GetState();
                 if (mouse.LeftButton == ButtonState.Pressed)
                 {
+                    // If no piece is ccurently selected
                     if (selectedPiecePosition == null)
                     {
                         // Try to select a piece
@@ -158,6 +230,7 @@ namespace NewChess
                             {
                                 if (_board.GetTurn() == _board.IsWhite((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y))
                                 {
+                                    // Make the move
                                     _draggedPiece = _board.GetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y);
                                     _avalaibleMoveSquares = _draggedPiece.GetValidMoves(selectedPiecePosition.Value, _board);
                                     _board.RemovePiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y);
@@ -185,6 +258,7 @@ namespace NewChess
                                 _board.SetPiece((int)dropPosition.Value.X, (int)dropPosition.Value.Y, _draggedPiece);
                                 if (_draggedPiece is King)
                                 {
+                                    // Make the castling move
                                     _board.KingMove((int)dropPosition.Value.X, (int)dropPosition.Value.Y);
                                     if ((int)dropPosition.Value.Y - (int)selectedPiecePosition.Value.Y == 2)
                                     {
@@ -226,20 +300,20 @@ namespace NewChess
                     }
                     else
                     {
-                        if (_draggedPiece != null) 
+                        if (_draggedPiece != null)
                         {
                             _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y, _draggedPiece);
                         }
                     }
                     if (_gameMode == GameMode.PlayerVsAI)
                     {
-                        if (!_board.GetTurn())
+                        if (!_board.GetTurn()) // If the AI is on the move
                         {
                             (Vector2? From, Vector2? To) = _aiplayer.GetBestMove(_board, 3);
                             if (From != null && To != null)
                             {
                                 IPiece piece = _board.GetPiece((int)From.Value.X, (int)From.Value.Y);
-                                if (piece is King) 
+                                if (piece is King)
                                 {
                                     piece.HasMoved = true;
                                 }
@@ -265,6 +339,7 @@ namespace NewChess
                         }
                     }
 
+                    // Reset the states of the positions
                     initialMousePosition = null;
                     previousMousePosition = null;
                     selectedPiecePosition = null;
@@ -285,6 +360,11 @@ namespace NewChess
             base.Update(gameTime);
         }
 
+        /// <summary>
+        /// Gets the texture of a piece
+        /// </summary>
+        /// <param name="piece">The piece</param>
+        /// <returns>The texture of the desired piece</returns>
         private Texture2D GetPieceTexture(IPiece piece)
         {
             if (piece == null)
@@ -345,9 +425,14 @@ namespace NewChess
 
             return texture;
         }
+
+        /// <summary>
+        /// The main draw method of the application
+        /// </summary>
+        /// <param name="gameTime">The elapsed time of the application</param>
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(new Color (236, 177, 118));
+            GraphicsDevice.Clear(new Color(236, 177, 118));
             _spriteBatch.Begin();
             if (_showMenu)
             {
@@ -355,24 +440,24 @@ namespace NewChess
             }
             else
             {
-                
                 Color darkSquareColor = new Color(111, 78, 55);
                 Color lightSquareColor = new Color(254, 216, 177);
+
+                // Go trough all of the indexes in the table
                 for (int row = 0; row < 8; row++)
                 {
                     for (int col = 0; col < 8; col++)
                     {
                         Color squareColor = (row + col) % 2 == 0 ? lightSquareColor : darkSquareColor;
                         Rectangle squareRect = new Rectangle(boardOffSetX + col * squareSize, boardOffSetY + row * squareSize, squareSize, squareSize);
-                        if (_avalaibleMoveSquares != null)
+                        // Color the avalaible moves red
+                        if (_avalaibleMoveSquares != null && _avalaibleMoveSquares.Contains(new Vector2(row, col)))
                         {
-                            if (_avalaibleMoveSquares.Contains(new Vector2(row, col)))
-                            {
-                                squareColor = new Color(153, 23, 40);
-                            }
+                            squareColor = new Color(153, 23, 40);
                         }
                         _spriteBatch.Draw(cellTexture, squareRect, squareColor);
 
+                        // Draw the pieces on the board
                         Texture2D pieceTexture = null;
                         if (_board.board[row, col] != null)
                         {
@@ -383,8 +468,8 @@ namespace NewChess
                                 float pieceY = squareRect.Y + (squareSize - pieceTexture.Height) / 2;
                                 float scale = 0.7f;
 
-                                pieceX += ((pieceTexture.Width * (1 - scale)) / 2);
-                                pieceY += ((pieceTexture.Height * (1 - scale)) / 2);
+                                pieceX += pieceTexture.Width * (1 - scale) / 2;
+                                pieceY += pieceTexture.Height * (1 - scale) / 2;
 
                                 _spriteBatch.Draw(pieceTexture, new Vector2(pieceX, pieceY), null, Color.White, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
                             }
@@ -393,6 +478,7 @@ namespace NewChess
                     }
                 }
 
+                // Draw the dragged piece
                 if (selectedPiecePosition.HasValue && initialMousePosition.HasValue && previousMousePosition.HasValue)
                 {
                     Texture2D pieceTexture = null;
@@ -406,8 +492,8 @@ namespace NewChess
 
                             // Center the piece under the mouse cursor
                             Vector2 piecePosition = new Vector2(
-                                mousePosition.X - (pieceTexture.Width * scale) / 2,
-                                mousePosition.Y - (pieceTexture.Height * scale) / 2
+                                mousePosition.X - pieceTexture.Width * scale / 2,
+                                mousePosition.Y - pieceTexture.Height * scale / 2
                             );
 
                             _spriteBatch.Draw(pieceTexture, piecePosition, null, Color.White, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);

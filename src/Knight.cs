@@ -7,24 +7,41 @@ using Microsoft.Xna.Framework;
 
 namespace NewChess
 {
+    /// <summary>
+    /// The derived class for the representation of the Knight piece
+    /// </summary>
     public class Knight : IPiece
     {
+        /// <summary>
+        /// The constructor of the Knight class
+        /// </summary>
+        /// <param name="isWhite">The color of the piece</param>
         public Knight(bool isWhite)
         {
             this.isWhite = isWhite;
         }
-        public override List<Vector2> GetValidMoves(Vector2 currentPosition, Board board, bool checkingForCheck = true, bool checkingForPin = true) 
+        /// <summary>
+        /// Gets the list of the valid moves for a piece
+        /// </summary>
+        /// <param name="currentPosition">The current position of the piece</param>
+        /// <param name="board">The representation of the chessboard</param>
+        /// <param name="checkingForCheck">If the function should check also for checks</param>
+        /// <param name="checkingForPin">If the function should check for pinned pieces</param>
+        /// <returns>The list of all the valid moves a piece has to offer</returns>
+        public override List<Vector2> GetValidMoves(Vector2 currentPosition, Board board, bool checkingForCheck = true, bool checkingForPin = true)
         {
             var validMoves = new List<Vector2>();
+
+            // The possible moves of a knight
             var possibleOffsets = new[]
             {
-                new Vector2(1, 2), 
+                new Vector2(1, 2),
                 new Vector2(1, -2),
-                new Vector2(-1, 2), 
+                new Vector2(-1, 2),
                 new Vector2(-1, -2),
-                new Vector2(2, 1), 
+                new Vector2(2, 1),
                 new Vector2(2, -1),
-                new Vector2(-2, 1), 
+                new Vector2(-2, 1),
                 new Vector2(-2, -1)
             };
 
