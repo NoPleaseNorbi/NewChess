@@ -38,7 +38,7 @@ namespace NewChess
                             board.RemovePiece(row, col);
 
                             float value = Minimax(board, depth - 1, alpha, beta, false);
-                            if (value > bestValue)
+                            if (value > bestValue && board.IsValidPosition(new Vector2(row, col)))
                             {
                                 bestValue = value;
                                 bestFrom = new Vector2(row, col);

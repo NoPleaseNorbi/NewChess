@@ -11,6 +11,8 @@ namespace NewChess
 {
     public class Button
     {
+        private MouseState _currentMouseState;
+        private MouseState _previousMouseState;
         private string _message;
         private Vector2 _position;
         private SpriteFont _font;
@@ -44,14 +46,15 @@ namespace NewChess
 
         public void Update(GameTime gameTime)
         {
-            MouseState mouseState = Mouse.GetState();
-            Rectangle cursor = new(mouseState.Position.X, mouseState.Position.Y, 1, 1);
+            _previousMouseState = _currentMouseState;
+            _currentMouseState = Mouse.GetState();
+            Rectangle cursor = new(_currentMouseState.Position.X, _currentMouseState.Position.Y, 1, 1);
 
             if (cursor.Intersects(_buttonRect))
             {
                 _shade = _backgroundShade;
 
-                if (mouseState.LeftButton == ButtonState.Pressed)
+                if (_currentMouseState.LeftButton == ButtonState.Released && _previousMouseState.LeftButton == ButtonState.Pressed)
                 {
                     _pressed = true;
                 }

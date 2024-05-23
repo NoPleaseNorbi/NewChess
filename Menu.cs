@@ -16,7 +16,7 @@ namespace NewChess
             VsAI,
             Exit
         }
-        private MenuState currentMenuState = MenuState.Main;
+        private MenuState currentMenuState;
 
         private SpriteFont _font;
         private GraphicsDeviceManager _graphics;
@@ -26,6 +26,7 @@ namespace NewChess
         Button exitButton;
         public Menu(SpriteFont font, GraphicsDeviceManager graphics)
         {
+            currentMenuState = MenuState.Main;
             _font = font;
             _graphics = graphics;
             oneOnOneButton = new Button(font, "Player vs Player", new Vector2(CalculateMiddleOfWindowHorizontally("Player vs Player"), 400), new Color(166, 123, 91), new Color(254, 216, 177));
@@ -77,6 +78,10 @@ namespace NewChess
             return currentMenuState;
         }
 
+        public void ResetMenu() 
+        {
+            currentMenuState = MenuState.Main;
+        }
 
     }
     

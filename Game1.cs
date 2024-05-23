@@ -50,7 +50,11 @@ namespace NewChess
         private Menu _menu;
         private bool _showMenu;
         private GameMode _gameMode;
+        private Button _exitButton;
 
+        const int boardOffSetX = 80;
+        const int boardOffSetY = 50;
+        const int squareSize = 80;
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -96,24 +100,24 @@ namespace NewChess
             blackKingTexture = Content.Load<Texture2D>("black-king");
 
             _font = Content.Load<SpriteFont>("Font");
-            _restartButton = new Button(_font, "Restart the game", new Vector2(230, 800), new Color(166, 123, 91), new Color(254, 216, 177));
             _menu = new Menu(_font, _graphics);
+            _restartButton = new Button(_font, "Restart the game", new Vector2(_menu.CalculateMiddleOfWindowHorizontally("Restart the game"), 800), new Color(166, 123, 91), new Color(254, 216, 177));
+            _exitButton = new Button(_font, "Exit the game", new Vector2(_menu.CalculateMiddleOfWindowHorizontally("Exit the game"), 730), new Color(166, 123, 91), new Color(254, 216, 177));
 
         }
 
         private Vector2? GetBoardPosition(Point mousePosition)
         {
-            const int boardOffSetX = 80;
-            const int boardOffSetY = 50;
-            const int squareSize = 80;
+            if (mousePosition.X >= boardOffSetX && mousePosition.X < boardOffSetX + 8 * squareSize &&
+        mousePosition.Y >= boardOffSetY && mousePosition.Y < boardOffSetY + 8 * squareSize)
+            {
+                int col = (mousePosition.X - boardOffSetX) / squareSize;
+                int row = (mousePosition.Y - boardOffSetY) / squareSize;
 
-            int col = (mousePosition.X - boardOffSetX) / squareSize;
-            int row = (mousePosition.Y - boardOffSetY) / squareSize;
+                return new Vector2(row, col); // Return the Vector2 directly
+            }
 
-            if (row >= 0 && row < 8 && col >= 0 && col < 8)
-                return new Vector2(row, col);
-            else
-                return null;
+            return null;
         }
         protected override void Update(GameTime gameTime)
         {
@@ -140,10 +144,6 @@ namespace NewChess
             }
             else
             {
-                if (_restartButton.ButtonPressed())
-                {
-                    _board = new Board();
-                }
                 var mouse = Mouse.GetState();
                 if (mouse.LeftButton == ButtonState.Pressed)
                 {
@@ -224,7 +224,14 @@ namespace NewChess
                             textToShow = "Stalemate!";
                         }
                     }
-                    if (_gameMode == GameMode.PlayerVsAI) 
+                    else
+                    {
+                        if (_draggedPiece != null) 
+                        {
+                            _board.SetPiece((int)selectedPiecePosition.Value.X, (int)selectedPiecePosition.Value.Y, _draggedPiece);
+                        }
+                    }
+                    if (_gameMode == GameMode.PlayerVsAI)
                     {
                         if (!_board.GetTurn())
                         {
@@ -232,6 +239,10 @@ namespace NewChess
                             if (From != null && To != null)
                             {
                                 IPiece piece = _board.GetPiece((int)From.Value.X, (int)From.Value.Y);
+                                if (piece is King) 
+                                {
+                                    piece.HasMoved = true;
+                                }
                                 _board.RemovePiece((int)From.Value.X, (int)From.Value.Y);
                                 _board.SetPiece((int)To.Value.X, (int)To.Value.Y, piece);
                                 _board.NextTurn();
@@ -253,12 +264,22 @@ namespace NewChess
                             }
                         }
                     }
-                    
+
                     initialMousePosition = null;
                     previousMousePosition = null;
                     selectedPiecePosition = null;
                     _draggedPiece = null;
                 }
+
+                if (_restartButton.ButtonPressed())
+                {
+                    _board = new Board();
+                }
+                else if (_exitButton.ButtonPressed())
+                {
+                    Exit();
+                }
+                _exitButton.Update(gameTime);
                 _restartButton.Update(gameTime);
             }
             base.Update(gameTime);
@@ -334,10 +355,7 @@ namespace NewChess
             }
             else
             {
-                const int boardOffSetX = 80;
-                const int boardOffSetY = 50;
-                const int squareSize = 80;
-                Vector2 gameFinishedTextPosition = new Vector2(280, 900);
+                
                 Color darkSquareColor = new Color(111, 78, 55);
                 Color lightSquareColor = new Color(254, 216, 177);
                 for (int row = 0; row < 8; row++)
@@ -397,7 +415,9 @@ namespace NewChess
                     }
 
                 }
+                _exitButton.Draw(_spriteBatch);
                 _restartButton.Draw(_spriteBatch);
+                Vector2 gameFinishedTextPosition = new Vector2(_menu.CalculateMiddleOfWindowHorizontally(textToShow), 900);
                 _spriteBatch.DrawString(_font, textToShow, gameFinishedTextPosition, Color.Black);
             }
             _spriteBatch.End();

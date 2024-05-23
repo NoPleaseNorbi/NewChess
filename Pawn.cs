@@ -31,14 +31,20 @@ namespace NewChess
             if ((int)currentPosition.X == startingRow)
             {
                 Vector2 twoSquaresForward = currentPosition + new Vector2(2 * direction, 0);
-                if (board.IsValidPosition(twoSquaresForward) && board.GetPiece((int)twoSquaresForward.X, (int)twoSquaresForward.Y) == null && board.GetPiece((int)oneSquareForward.X, (int)oneSquareForward.Y) == null) validMoves.Add(twoSquaresForward);
+                if (board.IsValidPosition(twoSquaresForward) && board.GetPiece((int)twoSquaresForward.X, (int)twoSquaresForward.Y) == null && board.GetPiece((int)oneSquareForward.X, (int)oneSquareForward.Y) == null)
+                {
+                    validMoves.Add(twoSquaresForward);
+                }
             }
 
             // Capture diagonally (if opponent piece is present)
             for (int i = -1; i <= 1; i += 2)
             {
                 Vector2 diagonal = currentPosition + new Vector2(direction, i);
-                if (board.IsValidPosition(diagonal) && board.GetPiece((int)diagonal.X, (int)diagonal.Y) != null && board.IsWhite((int)diagonal.X, (int)diagonal.Y) != isWhite) validMoves.Add(diagonal);
+                if (board.IsValidPosition(diagonal) && board.GetPiece((int)diagonal.X, (int)diagonal.Y) != null && board.IsWhite((int)diagonal.X, (int)diagonal.Y) != isWhite)
+                {
+                    validMoves.Add(diagonal);
+                }
             }
             if (checkingForPin)
             {
